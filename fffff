@@ -14,38 +14,36 @@ path operator""_p(const char* data, std::size_t sz) {
     return path(data, data + sz);
 }
 
-// напишите эту функцию
 bool Preprocess(const path& in_file, ofstream& out_stream, const vector<path>& include_directories) {
-    // Открываем входной файл
+    // открываем файл
     ifstream in_stream(in_file);
     if (!in_stream.is_open()) {
-        return false; // Возвращаем false, если входной файл не удалось открыть
+        return false; // Возвращаем false, если файл не удалось открыть
     }
 
-    // Регулярные выражения для директив #include
-    // Учитываем любые пробелы и табуляции
+    // регулярные выражения
     regex include_quoted(R"(^\s*#\s*include\s*\"([^\"]*)\"\s*$)");
     regex include_angled(R"(^\s*#\s*include\s*\<([^\>]*)\>\s*$)");
 
     string line;
     size_t line_number = 0;
 
-    // Обрабатываем входной файл построчно
+    // обрабатываем построчно
     while (getline(in_stream, line)) {
         ++line_number;
         smatch match;
 
-        // Проверяем директиву #include "..."
+        // проверяем include
         if (regex_match(line, match, include_quoted)) {
             path include_file = match[1].str();
             path include_path;
 
-            // Сначала пробуем относительно каталога текущего файла
+            // в каталоге
             path relative_path = in_file.parent_path() / include_file;
             if (filesystem::exists(relative_path)) {
                 include_path = relative_path;
             } else {
-                // Если не найдено, ищем в include_directories
+                // если нет, ищем directories
                 bool found = false;
                 for (const auto& dir : include_directories) {
                     path full_path = dir / include_file;
@@ -55,7 +53,7 @@ bool Preprocess(const path& in_file, ofstream& out_stream, const vector<path>& i
                         break;
                     }
                 }
-                // Если файл не найден, выводим сообщение об ошибке и возвращаем false
+                // если нет, выводим ошибку
                 if (!found) {
                     cout << "unknown include file " << include_file.string()
                          << " at file " << in_file.string()
@@ -64,17 +62,16 @@ bool Preprocess(const path& in_file, ofstream& out_stream, const vector<path>& i
                 }
             }
 
-            // Рекурсивно обрабатываем найденный файл
             if (!Preprocess(include_path, out_stream, include_directories)) {
                 return false;
             }
         }
-        // Проверяем директиву #include <...>
+        // проверяем include
         else if (regex_match(line, match, include_angled)) {
             path include_file = match[1].str();
             path include_path;
 
-            // Ищем файл в include_directories
+            // ищем в directories
             bool found = false;
             for (const auto& dir : include_directories) {
                 path full_path = dir / include_file;
@@ -84,7 +81,7 @@ bool Preprocess(const path& in_file, ofstream& out_stream, const vector<path>& i
                     break;
                 }
             }
-            // Если файл не найден, выводим сообщение об ошибке и возвращаем false
+            // если нет, выводим ошибку
             if (!found) {
                 cout << "unknown include file " << include_file.string()
                      << " at file " << in_file.string()
@@ -92,29 +89,28 @@ bool Preprocess(const path& in_file, ofstream& out_stream, const vector<path>& i
                 return false;
             }
 
-            // Рекурсивно обрабатываем найденный файл
+            // обрабатываем файл
             if (!Preprocess(include_path, out_stream, include_directories)) {
                 return false;
             }
         }
-        // Если строка не является директивой #include, записываем её в выходной поток
         else {
             out_stream << line << '\n';
         }
     }
 
-    return true; // Возвращаем true, если обработка прошла успешно
+    return true; // если успешно
 }
 
-// Перегружаем функцию для начального вызова с путём к выходному файлу
+// перегружаем функцию для начального вызова с путём к выходному файлу
 bool Preprocess(const path& in_file, const path& out_file, const vector<path>& include_directories) {
     // Открываем выходной файл
     ofstream out_stream(out_file);
     if (!out_stream.is_open()) {
-        return false; // Возвращаем false, если выходной файл не удалось открыть
+        return false; // если не удалось открыть
     }
 
-    // Вызываем основную функцию с потоком
+    // вызываем функцию с потоком
     return Preprocess(in_file, out_stream, include_directories);
 }
 
